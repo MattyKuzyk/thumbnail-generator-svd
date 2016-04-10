@@ -52,20 +52,20 @@ def folder_to_feature_matrix(path, bins, m, n):
     vecs = ([v for v in frame_vector(f, bins, m, n)] for f in frames)
     return np.stack(vecs, axis=1)
 
-# A = np.array(A)
-# A = A.transpose()
-# rank = np.linalg.matrix_rank(A)
-# svd = np.linalg.svd(A,compute_uv=True)
-# V = svd[2] # Returns eigenvectors as rows
-# norms = []
-# for eigenvec_columns in V.transpose(): # The metric is the sum of the the jth position in every eigenvector for all i eigenvectors
-#     norm = 0
-#     for j in range(0,rank):
-#         norm += np.power(eigenvec_columns[j],2)
-#     norms.append(norm)
-#
-# static_cluster = np.sum(norms)
-# print static_cluster
+def norm(A, i):
+    V = None
+    rank = 0
+    if A.shape[0] < A.shape[1]:
+        At = A.transpose()
+        svd = np.linalg.svd(At,compute_uv=True)
+        V = svd[0]
+        rank = np.linalg.matrix_rank(At)
+    else:
+        svd = np.linalg.svd(A,compute_uv=True)
+        V = svd[2]
+        rank = np.linalg.matrix_rank(A)
+
+    return np.sqrt(np.sum(np.power(V[i,0:rank], 2)))
 
 if __name__ == "__main__":
     # construct the argument parser and parse the arguments
