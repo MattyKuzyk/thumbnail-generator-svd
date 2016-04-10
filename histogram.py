@@ -42,15 +42,15 @@ for frame in frames:
 			A.append(hist)
 
 A = np.array(A)
-A.transpose()
+A = A.transpose()
 rank = np.linalg.matrix_rank(A)
 svd = np.linalg.svd(A,compute_uv=True)
-V = svd[2]
+V = svd[2] # Returns eigenvectors as rows
 norms = []
-for eigenvec in V:
+for eigenvec_columns in V.transpose(): # The metric is the sum of the the jth position in every eigenvector for all i eigenvectors
 	norm = 0
 	for j in range(0,rank):
-		norm += np.power(eigenvec[j],2)
+		norm += np.power(eigenvec_columns[j],2)
 	norms.append(norm)
 
 static_cluster = np.sum(norms)
