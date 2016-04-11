@@ -69,15 +69,11 @@ def cluster_content(vecs, rank):
 def frame_decomp(A):
     if A.shape[0] < A.shape[1]:
         At = A.transpose()
-        svd = np.linalg.svd(At,compute_uv=True)
-        S = svd[1]
-        V = svd[0]
+        U, S, V = np.linalg.svd(At)
         rank = np.linalg.matrix_rank(At)
-        return (V, S, rank)
+        return (U, S, rank)
     else:
-        svd = np.linalg.svd(A,compute_uv=True)
-        S = svd[1]
-        V = svd[2]
+        U, S, V = np.linalg.svd(A)
         rank = np.linalg.matrix_rank(A)
         return (V, S, rank)
 
