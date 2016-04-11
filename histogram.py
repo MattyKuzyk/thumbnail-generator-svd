@@ -79,12 +79,15 @@ def frame_decomp(A):
 
 def cluster(V, S, rank, t):
     norms = np.apply_along_axis(lambda Vi: norm(Vi, rank), 1, V)
-    sorted_V = V[np.argsort(norms),:]
+    # Keep track of original order of V to relate back to frame
+    V_idx = np.array([range(0,V.shape[0])]).T
+    V_with_idx = np.append(V_idx, V, axis=1)
+    sorted_V = V_with_idx[np.argsort(norms),:]
     unclustered_V = sorted_V
     clusters = []
 
     def min_dist(Vi, cluster, V, S, t):
-        return min([frame_distance(Vi, Vj, V, S, t) for Vj in cluster['children']])
+        return min([frame_distance(Vi, Vj[1:], V, S, t) for Vj in cluster['children']])
 
     def new_internal_dist(c, Vi, V, S, t):
         c_len = len(c['children'])
@@ -102,16 +105,16 @@ def cluster(V, S, rank, t):
             if len(clusters) == 1:
                 c = clusters[0]
                 if (c['internal_distance'] == 0 or
-                    (min_dist(Vi, c, V, S, t)/c['internal_distance'] < 0.5)):
-                    c['internal_distance'] = new_internal_dist(c, Vi, V, S, t)
+                    (min_dist(Vi[1:], c, V, S, t)/c['internal_distance'] < 0.5)):
+                    c['internal_distance'] = new_internal_dist(c, Vi[1:], V, S, t)
                     c['children'].append(Vi)
                     to_delete_idx.append(i)
             else:
                 for c in clusters:
                     if (c['internal_distance'] == 0 or
-                        cluster_content(c['children'], rank) < cluster_content([Vi], rank) or
-                        (min_dist(Vi, c, V, S, t)/c['internal_distance'] < 2.0)):
-                        c['internal_distance'] = new_internal_dist(c, Vi, V, S, t)
+                        cluster_content(c['children'], rank) < cluster_content([Vi[1:]], rank) or
+                        (min_dist(Vi[1:], c, V, S, t)/c['internal_distance'] < 2.0)):
+                        c['internal_distance'] = new_internal_dist(c, Vi[1:], V, S, t)
                         c['children'].append(Vi)
                         to_delete_idx.append(i)
 
