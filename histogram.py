@@ -52,20 +52,79 @@ def folder_to_feature_matrix(path, bins, m, n):
     vecs = ([v for v in frame_vector(f, bins, m, n)] for f in frames)
     return np.stack(vecs, axis=1)
 
-def norm(A, i):
-    V = None
-    rank = 0
+def norm(Vi, rank):
+    return np.sqrt(np.sum(np.power(Vi[0:rank], 2)))
+
+# Euclidean distance weighted by the singular values from S. t specifies how
+# many singular values to use.
+def frame_distance(Vi, Vj, V, S, t):
+    s_values = S[0:t-1]
+    diff = (Vi - Vj)[0:t-1]
+    return np.sqrt(np.power(np.dot(s_values, diff), 2))
+
+def cluster_content(vecs, rank):
+    return sum([np.power(norm(Vi, rank), 2) for Vi in vecs])
+
+# A singular value decomposition which takes into account large numbers of frame
+def frame_decomp(A):
     if A.shape[0] < A.shape[1]:
         At = A.transpose()
         svd = np.linalg.svd(At,compute_uv=True)
+        S = svd[1]
         V = svd[0]
         rank = np.linalg.matrix_rank(At)
+        return (V, S, rank)
     else:
         svd = np.linalg.svd(A,compute_uv=True)
+        S = svd[1]
         V = svd[2]
         rank = np.linalg.matrix_rank(A)
+        return (V, S, rank)
 
-    return np.sqrt(np.sum(np.power(V[i,0:rank], 2)))
+def cluster(V, S, rank, t):
+    norms = np.apply_along_axis(lambda Vi: norm(Vi, rank), 1, V)
+    sorted_V = V[np.argsort(norms),:]
+    unclustered_V = sorted_V
+    clusters = []
+
+    def min_dist(Vi, cluster, V, S, t):
+        return min([frame_distance(Vi, Vj, V, S, t) for Vj in cluster['children']])
+
+    def new_internal_dist(c, Vi, V, S, t):
+        c_len = len(c['children'])
+        return ((c_len - 1)*c['internal_distance'] + min_dist(Vi, c, V, S, t))/c_len
+
+    while len(unclustered_V) > 0:
+        clusters.append({
+            'internal_distance': 0,
+            'children': [unclustered_V[0,:]]
+        })
+        unclustered_V = unclustered_V[1:,:]
+        to_delete_idx = []
+
+        for i, Vi in zip(it.count(), unclustered_V):
+            if len(clusters) == 1:
+                c = clusters[0]
+                if (c['internal_distance'] == 0 or
+                    (min_dist(Vi, c, V, S, t)/c['internal_distance'] < 0.5)):
+                    c['internal_distance'] = new_internal_dist(c, Vi, V, S, t)
+                    c['children'].append(Vi)
+                    to_delete_idx.append(i)
+            else:
+                for c in clusters:
+                    if (c['internal_distance'] == 0 or
+                        cluster_content(c['children'], rank) < cluster_content([Vi], rank) or
+                        (min_dist(Vi, c, V, S, t)/c['internal_distance'] < 2.0)):
+                        c['internal_distance'] = new_internal_dist(c, Vi, V, S, t)
+                        c['children'].append(Vi)
+                        to_delete_idx.append(i)
+
+        unclustered_V = np.delete(unclustered_V, to_delete_idx, axis=0)
+        print 'Cluster count: {}'.format(len(clusters))
+        print 'Unclustered V: {}'.format(len(unclustered_V))
+
+    return clusters
+
 
 if __name__ == "__main__":
     # construct the argument parser and parse the arguments
@@ -79,3 +138,5 @@ if __name__ == "__main__":
         A = video_to_feature_matrix(args.video)
     elif args.frames:
         A = folder_to_feature_matrix(args.frames)
+
+    V, S, rank = frame_decomp(A)
