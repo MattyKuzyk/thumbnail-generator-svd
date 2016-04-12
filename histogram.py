@@ -126,6 +126,10 @@ def cluster(V, S, rank, t):
 
     return clusters
 
+def play_cluster(frames, cluster, fps):
+    for v in sorted(cluster['children'], key=lambda v: v[0]):
+        cv2.imshow('cluster', frames[int(v[0])])
+        cv2.waitKey(1000/fps)
 
 if __name__ == "__main__":
     # construct the argument parser and parse the arguments
