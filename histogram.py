@@ -105,7 +105,7 @@ def cluster(V, S, rank, t):
             if len(clusters) == 1:
                 c = clusters[0]
                 if (c['internal_distance'] == 0 or
-                    (min_dist(Vi[1:], c, V, S, t)/c['internal_distance'] < 0.5)):
+                    (min_dist(Vi[1:], c, V, S, t)/c['internal_distance'] < 5.0)):
                     c['internal_distance'] = new_internal_dist(c, Vi[1:], V, S, t)
                     c['children'].append(Vi)
                     to_delete_idx.append(i)
