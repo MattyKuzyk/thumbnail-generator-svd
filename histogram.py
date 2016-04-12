@@ -42,15 +42,17 @@ def frame_vector(frame, bins, m, n):
     hs = [histogram(block, bins) for block in partion_frame(frame, m, n)]
     return np.array(hs).flatten()
 
-def video_to_feature_matrix(filename, bins, m, n):
-    frames = frames_from_file(filename)
+def frames_to_matrix(frames, bins, m, n):
     vecs = ([v for v in frame_vector(f, bins, m, n)] for f in frames)
     return np.stack(vecs, axis=1)
 
+def video_to_feature_matrix(filename, bins, m, n):
+    frames = frames_from_file(filename)
+    return frames_to_matrix(frames, bins, m, n)
+
 def folder_to_feature_matrix(path, bins, m, n):
     frames = frames_from_folder(path)
-    vecs = ([v for v in frame_vector(f, bins, m, n)] for f in frames)
-    return np.stack(vecs, axis=1)
+    return frames_to_matrix(frames, bins, m, n)
 
 def norm(Vi, rank):
     return np.sqrt(np.sum(np.power(Vi[0:rank], 2)))
